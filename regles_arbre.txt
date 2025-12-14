@@ -1,0 +1,31 @@
+|--- chocolat <= 0.50
+|   |--- fruité <= 0.50
+|   |   |--- nougat <= 0.50
+|   |   |   |--- cacahuètes_amandes <= 0.50
+|   |   |   |   |--- value: [36.17]
+|   |   |   |--- cacahuètes_amandes >  0.50
+|   |   |   |   |--- value: [23.42]
+|   |   |--- nougat >  0.50
+|   |   |   |--- value: [46.30]
+|   |--- fruité >  0.50
+|   |   |--- value: [44.23]
+|--- chocolat >  0.50
+|   |--- cacahuètes_amandes <= 0.50
+|   |   |--- caramel <= 0.50
+|   |   |   |--- nougat <= 0.50
+|   |   |   |   |--- value: [51.06]
+|   |   |   |--- nougat >  0.50
+|   |   |   |   |--- value: [67.60]
+|   |   |--- caramel >  0.50
+|   |   |   |--- riz_soufflé <= 0.50
+|   |   |   |   |--- value: [65.99]
+|   |   |   |--- riz_soufflé >  0.50
+|   |   |   |   |--- value: [81.64]
+|   |--- cacahuètes_amandes >  0.50
+|   |   |--- caramel <= 0.50
+|   |   |   |--- value: [72.26]
+|   |   |--- caramel >  0.50
+|   |   |   |--- riz_soufflé <= 0.50
+|   |   |   |   |--- value: [56.91]
+|   |   |   |--- riz_soufflé >  0.50
+|   |   |   |   |--- value: [59.53]
