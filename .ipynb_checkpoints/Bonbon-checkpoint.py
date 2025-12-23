@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import tree
 
 # ---------------- CONFIG ----------------
-BACKGROUND_IMAGE = r"bg2.jpg"  # place bg.jpg in same folder as notebook / .py after conversion
+BACKGROUND_IMAGE = r"background.jpg"  # place bg.jpg in same folder as notebook / .py after conversion
 CSV = "candy-data.csv"
 MODEL_PATH = "modele_regressor.joblib"
 RANDOM_STATE = 42
@@ -343,108 +343,92 @@ try:
 except Exception:
     expected = None
 
-# ---------------- UI (pages) ----------------
-page = st.sidebar.selectbox('Navigation', ['Accueil', "À propos"]) 
+# ================= UI =================
 
-if page == 'Accueil':
-    st.markdown("<div class='main-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='title'>POPULARITÉ</div>", unsafe_allow_html=True)
-    st.markdown("<div class='title' style='font-size:18px;margin-top:-6px;color:#f09aa6'>D'UN BONBON</div>", unsafe_allow_html=True)
-    st.markdown("<div class='subtitle'>Vous aimez votre bonbon</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-card'>", unsafe_allow_html=True)
+st.markdown("<div class='title'>POPULARITÉ</div>", unsafe_allow_html=True)
+st.markdown("<div class='title' style='font-size:18px;margin-top:-6px;color:#f09aa6'>D'UN BONBON</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Vous aimez votre bonbon</div>", unsafe_allow_html=True)
+
+# ---- Checkboxes ----
+cols = feature_names or [
+    'chocolat','fruité','caramel',
+    'cacahuètes_amandes','riz_soufflé','nougat'
+]
+
+mapping = {
+    'chocolat':'Chocolaté',
+    'fruité':'Fruité',
+    'caramel':'Caramélisé',
+    'cacahuètes_amandes':'Cacahuètes / Amandes',
+    'riz_soufflé':'Riz soufflé',
+    'nougat':'Nougat'
+}
+
+left, right = st.columns(2)
+
+with left:
+    v_choc = st.checkbox(mapping['chocolat'])
+    v_fru  = st.checkbox(mapping['fruité'])
+    v_car  = st.checkbox(mapping['caramel'])
+
+with right:
+    v_pea = st.checkbox(mapping['cacahuètes_amandes'])
+    v_riz = st.checkbox(mapping['riz_soufflé'])
+    v_nou = st.checkbox(mapping['nougat'])
+
+# ---- Buttons ----
+predict_btn = st.button("Prédire")
+rules_btn   = st.button("Afficher les règles de l'arbre")
+tree_btn    = st.button("Afficher l'arbre (PNG)")
+
+# ---- Prediction ----
+if predict_btn:
+    inp = {
+        'chocolat': int(v_choc),
+        'fruité': int(v_fru),
+        'caramel': int(v_car),
+        'cacahuètes_amandes': int(v_pea),
+        'riz_soufflé': int(v_riz),
+        'nougat': int(v_nou)
+    }
+
+    if expected is not None:
+        row = pd.DataFrame([{k: inp.get(k, 0) for k in expected}])
+    else:
+        row = pd.DataFrame([inp])
+
+    try:
+        pred = float(model.predict(row)[0])
+        st.markdown(
+            f"<div class='result-box'><b>Résultat</b>Score estimé : {pred:.2f} %</div>",
+            unsafe_allow_html=True
+        )
+    except Exception as e:
+        st.error(str(e))
+
+# ---- Rules ----
+if rules_btn:
+    try:
+        rules = export_text(model, feature_names=feature_names)
+        st.text_area("Règles de l'arbre", rules, height=300)
+    except Exception as e:
+        st.error(str(e))
+
+# ---- Tree image ----
+if tree_btn:
+    if os.path.exists("arbre.png"):
+        st.image("arbre.png", use_column_width=True)
+    else:
+        fig, ax = plt.subplots(figsize=(10,6))
+        plot_tree(model, feature_names=feature_names, filled=True, ax=ax)
+        fig.savefig("arbre.png", dpi=150)
+        plt.close(fig)
+        st.image("arbre.png", use_column_width=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+
     
-    # display checkboxes in two columns
-    cols = feature_names or ['chocolat','fruité','caramel','cacahuètes_amandes','riz_soufflé','nougat']
-    mapping = {'chocolat':'Chocolaté','fruité':'Fruité','caramel':'Caramélisé','cacahuètes_amandes':'Cacahuètes / Amandes','riz_soufflé':'Riz soufflé','nougat':'Nougat'}
-    left, right = st.columns([1,1])
-    with left:
-        v_choc = st.checkbox(mapping.get('chocolat'))
-        v_fru = st.checkbox(mapping.get('fruité'))
-        v_car = st.checkbox(mapping.get('caramel'))
-    with right:
-        v_pea = st.checkbox(mapping.get('cacahuètes_amandes'))
-        v_riz = st.checkbox(mapping.get('riz_soufflé'))
-        v_nou = st.checkbox(mapping.get('nougat'))
-
-    if st.button('Prédire'):
-        # build input vector matching expected feature names
-        if expected is not None:
-            inp = {name: 0 for name in expected}
-            # map known friendly names to potential expected names
-            mapping_inputs = {
-                'chocolat': int(v_choc),
-                'fruité': int(v_fru),
-                'caramel': int(v_car),
-                'cacahuètes_amandes': int(v_pea),
-                'riz_soufflé': int(v_riz),
-                'nougat': int(v_nou)
-            }
-            for k,v in mapping_inputs.items():
-                if k in inp:
-                    inp[k]=v
-                else:
-                    # try alternatives (english names or without accents)
-                    alt = k.replace('é','e')
-                    if alt in inp:
-                        inp[alt]=v
-            row = pd.DataFrame([inp], columns=list(inp.keys()))
-        else:
-            # fallback: use feature_names order
-            row = pd.DataFrame([{c:int((v_choc if c=='chocolat' else v_fru) ) for c in cols}])
-
-        try:
-            pred = float(model.predict(row)[0])
-            st.markdown(f"<div class='result-box'><b>Résultat</b><br>Score estimé : {pred:.2f} %</div>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error('Erreur lors de la prédiction : ' + str(e))
-
-    if st.button('Afficher les règles de l\'arbre'):
-        try:
-            rules = export_text(model, feature_names=feature_names)
-            st.text_area('Règles (arbre de décision)', value=rules, height=300)
-        except Exception as e:
-            st.error('Impossible d\'exporter les règles : '+str(e))
-
-    if st.button('Arbre de décision (PNG)'):
-        if os.path.exists('arbre.png'):
-            st.image('arbre.png', use_column_width=True)
-        else:
-            try:
-                fig, ax = plt.subplots(figsize=(10,6))
-                plot_tree(model, feature_names=feature_names, filled=True, rounded=True, ax=ax)
-                fig.tight_layout()
-                fig.savefig('arbre.png', dpi=150)
-                plt.close(fig)
-                st.image('arbre.png', use_column_width=True)
-            except Exception as e:
-                st.error('Impossible d\'afficher/générer l\'arbre: '+str(e))
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-else:
-    # À propos page
-    st.markdown("<div class='main-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='title'>À PROPOS</div>", unsafe_allow_html=True)
-    st.markdown("<div class='subtitle'>Informations sur le projet</div>", unsafe_allow_html=True)
-    st.markdown('''
-    <p>Ce projet est un système expert simple basé sur un arbre de décision entraîné sur le dataset <code>candy-data.csv</code>.
-    Il prédit la <strong>popularité</strong> (winpercent) d'un bonbon à partir de caractéristiques binaires (chocolaté, fruité, etc.).</p>
-    <ul>
-    <li>Nettoyage : suppression des colonnes inutiles.</li>
-    <li>Modèle : DecisionTreeRegressor (max_depth=4).</li>
-    <li>Export : règles texte et image de l'arbre (arbre.png).</li>
-    </ul>
-    ''', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 
 
